@@ -1,0 +1,84 @@
+
+
+for MC = 1:100
+    disp(MC); 
+    tic; 
+    r = OASES; 
+%     c1 = 1500 + 2*randn(1); 
+%     r.setIsovelocity(c1); 
+    r.zmax = 300; 
+    r.zr = [0:2:300];
+    r.randomSSP; 
+    r.maxRange = 20e3; 
+    r.ssps = r.ssps(1:5:end); 
+    r.depth = r.depth(1:5:end); 
+    r.dr = 10; 
+    
+    c1 = r.ssps; 
+    
+    r.writeEnvOASP; 
+    %run OASES 
+    !oasp input 
+    toc 
+    
+    [out,sd,z,range,f,fc,omegim]=trf_reader_oases('input.trf');
+    
+    save_str = ['save output' num2str(MC) '.mat out f c1']; 
+    eval(save_str); 
+    toc 
+end
+
+
+%% data analysis 
+
+F = []; 
+Fields = []; 
+range = [10:10:10e3]; 
+
+C = []; 
+
+
+for MC = 1:79
+    eval(['load output' num2str(MC)]); 
+    F = [F; f];
+    Fields = [Fields; out(50, range/10)]; 
+%     C = [C; c1]; 
+end
+
+figure; plot(Fields, '*'); axis equal
+
+%% PE data analysis 
+F = []; 
+Fields = []; 
+range = [1:1:79999]; 
+dr = 10; 
+dz = 1; 
+
+
+C = []; 
+for MC = 1:20%[1:53 55:200]
+    eval(['load output_PE_' num2str(MC)]); 
+	k = 2*pi*r.frequency/1500; %reference wave number 
+%     F = [F; f];
+    Fields = [Fields; r.gGrid(100, range)*exp(j*k*range)]; 
+%     C = [C; c1]; 
+end
+
+figure; plot(Fields, '*'); axis equal
+
+
+
+%% 
+
+k = 3; 
+
+
+for k = 10:1:50
+    figure(1); plot(Fields(:, k), '*'); 
+    title(['range = ' num2str(range(k))]); 
+    axis equal 
+    axis(3*1e-2*[-1 1 -1 1])
+    eval(['print -dtiff range_' num2str(range(k)) '_field_distribution.tif']); 
+end 
+
+
